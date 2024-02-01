@@ -1,23 +1,30 @@
-const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+import express from 'express';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+
+async function setupDatabase() {
+    const db = await open({
+        filename: 'mydb.sqlite',
+        driver: sqlite3.Database
+    });
+
+    await db.run('CREATE TABLE IF NOT EXISTS users(id INT, name TEXT)');
+    return db;
+}
+
 const app = express();
 app.use(express.json());
+
 const port = 3000;
+let db;
 
-let db = new sqlite3.Database('mydb.sqlite');
-
-db.serialize(() => {
-    db.run('CREATE TABLE IF NOT EXISTS users(id INT, name TEXT)');
-
-//   let stmt = db.prepare('INSERT INTO users VALUES (?, ?)');
-//   for (let i = 0; i < 10; i++) {
-//     stmt.run(i, `User ${i}`);
-//   }
-//   stmt.finalize();
-
-//   db.each('SELECT id, name FROM users', (err, row) => {
-//     console.log(row.id + ': ' + row.name);
-//   });
+setupDatabase().then(database => {
+    db = database;
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+}).catch(err => {
+    console.error('Database initialization failed:', err);
 });
 
 app.get('/users', (req, res) => {
